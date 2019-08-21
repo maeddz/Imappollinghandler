@@ -1,44 +1,39 @@
 import imaplib
 import email
-from email.header import Header, decode_header, make_header
 import time
-import base64
+mail = imaplib.IMAP4_SSL('mail.asiatech.ir')
+mail.login('M.Davoodzadeh@asiatech.ir', '77maede@CEUT95')
 
-mail = imaplib.IMAP4_SSL('mail.something.com',993)
+while True:
+    mail.list()
+    mail.select('inbox')
+    result, data = mail.uid('search', None, "UNSEEN")
 
-mail.login('mail@something.com', 'password')
+    i = len(data[0].split())
+    print("number of unseen emails:" + str(i))
+    for x in range(i):
+        latest_email_uid = data[0].split()[x]
+        result, email_data = mail.uid('fetch', latest_email_uid, '(RFC822)')
+        raw_email = email_data[0][1]
 
-mail.select('INBOX')
-# while True:
-result, data = mail.uid('search', None, "ALL")
-number = data[0].split()[:5]
-print("number of unseen emails:" + str(data[0].split()[:5]))
-if result == 'OK':
-    for num in data[0].split()[:5]:
-        print("#######################################################################################")
-        result, data = mail.uid('fetch', num, '(RFC822)')
-        # # print data
-        if result == 'OK':
-            parsed_email = email.message_from_bytes(data[0][1])
-            print('From:', parsed_email['From'])
-            print('To:', parsed_email['To'])
-            print('Date:', parsed_email['Date'])
-            print('Subject:', decode_header(parsed_email['Subject']))
-            for part in parsed_email.walk():
-                if part.is_multipart():
-                    # maybe need also parse all subparts
-                    continue
-                elif part.get_content_maintype() == 'text':
-                    text = part.get_payload(decode=True).decode(part.get_content_charset())
-                    print('Text:\n', text)
-                elif part.get_content_maintype() == 'application' and part.get_content_disposition() == 'attachment':
-                    name = decode_header(part.get_filename())
-                    body = part.get_payload(decode=True)
-                    size = len(body)
-                    print('Attachment: "{}", size: {} bytes, starts with: "{}"'.format(name, size, body[:50]))
-                else:
-                    print('Unknown part:', part.get_content_type())
+        # print(raw_email)
+        raw_email_string = raw_email.decode('utf-8')
+        email_message = email.message_from_string(raw_email_string)
+        parsed_email = email.message_from_bytes(raw_email)
+        print('From:', parsed_email['From'])
+        print('To:', parsed_email['To'])
+        print('Date:', parsed_email['Date'])
+        print('Subject:', base64.b64decode(parsed_email['Subject']))
+        # print(email_message)
+        for part in email_message.walk():
+            print(part.get_content_type())
 
-#sleep(5)
-mail.close()
-mail.logout()
+            if part.get_content_type() == "text/html":
+                # print(part)
+                body = part.get_payload(decode=True)
+                save_string = str("mail" + str(x) + ".html")
+                myfile = open(save_string, 'a')
+                myfile.write(body.decode('utf-8'))
+                myfile.close()
+
+    sleep(10)
