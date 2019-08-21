@@ -1,21 +1,25 @@
 import imaplib
 import email
 import time
+import requests
+
 mail = imaplib.IMAP4_SSL('mail.asiatech.ir')
 mail.login('M.Davoodzadeh@asiatech.ir', '77maede@CEUT95')
-
+api_token = 'token'
+api_url_base = 'base_url'
+headers = {
+        'Authorization': 'Bearer {0}'.format(api_token)
+        }
 while True:
     mail.list()
     mail.select('inbox')
     result, data = mail.uid('search', None, "UNSEEN")
-
     i = len(data[0].split())
     print("number of unseen emails:" + str(i))
     for x in range(i):
         latest_email_uid = data[0].split()[x]
         result, email_data = mail.uid('fetch', latest_email_uid, '(RFC822)')
         raw_email = email_data[0][1]
-
         # print(raw_email)
         raw_email_string = raw_email.decode('utf-8')
         email_message = email.message_from_string(raw_email_string)
